@@ -1,6 +1,7 @@
 create database newscript;
 use newscript;
 
+
 CREATE TABLE Feed_1 (
     order_id INT AUTO_INCREMENT PRIMARY KEY,
     customer_id INT,
