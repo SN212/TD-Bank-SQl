@@ -151,7 +151,77 @@ BEGIN
 END$$
 
 DELIMITER ;
+DELIMITER $$
 
+CREATE PROCEDURE populate_feed_2(IN row_count INT)
+BEGIN
+    DECLARE i INT DEFAULT 0;
+    WHILE i < row_count DO
+        INSERT INTO Feed_2 (
+            first_name, last_name, email, phone, address,
+            city, state, zip_code, country,
+            dob, gender, created_at, updated_at, status
+        ) VALUES (
+            ELT(FLOOR(1 + RAND()*5), 'John','Jane','Alice','Bob','Emma'),  -- random first name
+            ELT(FLOOR(1 + RAND()*5), 'Doe','Smith','Johnson','Brown','Williams'), -- last name
+            CONCAT('user', FLOOR(RAND()*1000), '@example.com'),  -- unique email
+            CONCAT(FLOOR(6000000000 + RAND()*3999999999)),       -- 10-digit random phone
+            CONCAT('Street ', FLOOR(RAND()*500)),                
+            ELT(FLOOR(1+RAND()*5),'New York','Los Angeles','Chicago','Houston','Dallas'),
+            ELT(FLOOR(1+RAND()*5),'NY','CA','IL','TX','FL'),
+            LPAD(FLOOR(10000 + RAND()*89999),5,'0'),
+            ELT(FLOOR(1+RAND()*3),'USA','India','UK'),
+            DATE_SUB(CURDATE(), INTERVAL FLOOR(RAND()*15000) DAY), -- dob
+            ELT(FLOOR(1+RAND()*2), 'Male','Female'),
+            CURDATE() - INTERVAL FLOOR(RAND()*100) DAY, -- created_at
+            CURDATE() - INTERVAL FLOOR(RAND()*10) DAY,  -- updated_at
+            ELT(FLOOR(1+RAND()*2),'Active','Inactive')
+        );
+        SET i = i + 1;
+    END WHILE;
+END$$
+
+DELIMITER ;
+
+DELIMITER $$
+
+CREATE PROCEDURE populate_feed_3(IN row_count INT)
+BEGIN
+    DECLARE i INT DEFAULT 0;
+    WHILE i < row_count DO
+        INSERT INTO Feed_3 (
+            product_name, description, price, quantity,
+            category, brand, sku, weight, dimensions,
+            color, material, warranty_period,
+            rating, num_reviews, origin_country,
+            release_date, created_at, updated_at, status
+        ) VALUES (
+            ELT(FLOOR(1+RAND()*6),
+                'Wireless Mouse','Keyboard','Charger','Speaker','Headset','Webcam'),
+            CONCAT('Random product description ', FLOOR(RAND()*100)),
+            ROUND(10 + RAND()*200,2),
+            FLOOR(1 + RAND()*200),
+            ELT(FLOOR(1+RAND()*5),'Electronics','Audio','Office','Accessories','Storage'),
+            ELT(FLOOR(1+RAND()*5),'Logitech','Corsair','Anker','JBL','Razer'),
+            CONCAT('SKU-', FLOOR(1000 + RAND()*9999)),
+            ROUND(0.1+RAND()*2,2),
+            CONCAT(FLOOR(5+RAND()*20),'x',FLOOR(5+RAND()*15),'x',FLOOR(1+RAND()*5),' in'),
+            ELT(FLOOR(1+RAND()*4),'Black','White','Silver','Gray'),
+            ELT(FLOOR(1+RAND()*3),'Plastic','Metal','Aluminum'),
+            ELT(FLOOR(1+RAND()*3),'6 months','1 year','2 years'),
+            ROUND(3.5 + (RAND()*1.5),1),
+            FLOOR(50+RAND()*1000),
+            ELT(FLOOR(1+RAND()*5),'China','USA','Japan','India','Taiwan'),
+            CURDATE() - INTERVAL FLOOR(RAND()*1000) DAY,
+            CURDATE() - INTERVAL FLOOR(RAND()*200) DAY,
+            CURDATE(),
+            ELT(FLOOR(1+RAND()*2),'Active','Inactive')
+        );
+        SET i = i + 1;
+    END WHILE;
+END$$
+
+DELIMITER ;
 
 ##REQ3
 
@@ -189,6 +259,19 @@ SELECT first_name, last_name, email, phone, address, city, state, zip_code, coun
 FROM Feed_2
 GROUP BY first_name, last_name, email, phone, address, city, state, zip_code, country, dob, gender, created_at, updated_at, status
 HAVING COUNT(*) > 1 INTO OUTFILE 'C:/ProgramData/MySQL/MySQL Server 8.0/Uploads/feed2_duplicates2.csv';
+
+SELECT 
+    product_name, description, price, quantity, category, brand, sku, weight, dimensions,
+    color, material, warranty_period, rating, num_reviews, origin_country, release_date,
+    created_at, updated_at, status, COUNT(*)
+FROM 
+    Feed_3
+GROUP BY 
+    product_name, description, price, quantity, category, brand, sku, weight, dimensions,
+    color, material, warranty_period, rating, num_reviews, origin_country, release_date,
+    created_at, updated_at, status
+HAVING COUNT(*) > 1
+INTO OUTFILE 'C:/ProgramData/MySQL/MySQL Server 8.0/Uploads/feed3_duplicates3.csv';
 
 ##REQ5
 DELETE FROM Feed_1
