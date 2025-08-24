@@ -330,4 +330,95 @@ SELECT f1.*
 FROM Feed_1 f1
 LEFT JOIN Feed_3 f3
     ON f1.product_id = f3.product_id
-WHERE f3.product_id IS NULL;
+WHERE f3.product_id IS NULL;  
+
+#Req 8 and Req 9
+DROP PROCEDURE IF EXISTS run_e2e_pipeline;
+DELIMITER $$
+CREATE PROCEDURE run_e2e_pipeline(IN expected_new_rows INT)
+BEGIN
+  -- 1) Snapshot duplicates (acts like exporting “duplicates”)
+  DELETE FROM duplicates_snapshot WHERE DATE(snapshot_time)=CURRENT_DATE();
+  INSERT INTO duplicates_snapshot (feed_name, row_hash, dup_count)
+    SELECT 'Feed_1', row_hash, dup_count FROM v_feed1_dups
+    UNION ALL
+    SELECT 'Feed_2', row_hash, dup_count FROM v_feed2_dups
+    UNION ALL
+    SELECT 'Feed_3', row_hash, dup_count FROM v_feed3_dups;
+
+  
+  DELETE f1
+  FROM Feed_1 f1
+  JOIN Feed_1 f2
+    ON f1.customer_id     = f2.customer_id
+   AND f1.product_id      = f2.product_id
+   AND f1.quantity        = f2.quantity
+   AND f1.price_per_unit  = f2.price_per_unit
+   AND f1.total_price     = f2.total_price
+   AND f1.order_status    = f2.order_status
+   AND f1.payment_method  = f2.payment_method
+   AND f1.order_date      = f2.order_date
+   AND f1.shipping_address= f2.shipping_address
+   AND f1.order_id > f2.order_id;
+
+ 
+  DELETE f1
+  FROM Feed_2 f1
+  JOIN Feed_2 f2
+    ON f1.first_name = f2.first_name
+   AND f1.last_name  = f2.last_name
+   AND f1.email      = f2.email
+   AND f1.phone      = f2.phone
+   AND f1.address    = f2.address
+   AND f1.city       = f2.city
+   AND f1.state      = f2.state
+   AND f1.zip_code   = f2.zip_code
+   AND f1.country    = f2.country
+   AND f1.dob        = f2.dob
+   AND f1.gender     = f2.gender
+   AND f1.created_at = f2.created_at
+   AND f1.updated_at = f2.updated_at
+   AND f1.status     = f2.status
+   AND f1.customer_id > f2.customer_id;
+
+
+  DELETE f1
+  FROM Feed_3 f1
+  JOIN Feed_3 f2
+    ON f1.product_name     = f2.product_name
+   AND f1.description      = f2.description
+   AND f1.price            = f2.price
+   AND f1.quantity         = f2.quantity
+   AND f1.category         = f2.category
+   AND f1.brand            = f2.brand
+   AND f1.sku              = f2.sku
+   AND f1.weight           = f2.weight
+   AND f1.dimensions       = f2.dimensions
+   AND f1.color            = f2.color
+   AND f1.material         = f2.material
+   AND f1.warranty_period  = f2.warranty_period
+   AND f1.rating           = f2.rating
+   AND f1.num_reviews      = f2.num_reviews
+   AND f1.origin_country   = f2.origin_country
+   AND f1.release_date     = f2.release_date
+   AND f1.created_at       = f2.created_at
+   AND f1.updated_at       = f2.updated_at
+   AND f1.status           = f2.status
+   AND f1.product_id > f2.product_id;
+
+ 
+  CALL run_e2e_tests(expected_new_rows);
+
+
+  SELECT * FROM test_results ORDER BY run_at DESC, id DESC;
+  SELECT * FROM duplicates_snapshot ORDER BY snapshot_time DESC, feed_name, dup_count DESC;
+
+  
+  DROP TABLE IF EXISTS compare_results_persist;
+  CREATE TABLE compare_results_persist AS
+    SELECT * FROM compare_results;
+END$$
+DELIMITER ;
+
+
+
